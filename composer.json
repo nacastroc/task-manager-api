@@ -1,8 +1,8 @@
 {
-    "name": "laravel/laravel",
+    "name": "nacastroc/task-manager-api",
     "type": "project",
-    "description": "The Laravel Framework.",
-    "keywords": ["framework", "laravel"],
+    "description": "A simple task management system.",
+    "keywords": ["api", "laravel"],
     "license": "MIT",
     "require": {
         "php": "^7.3|^8.0",
