@@ -1,4 +1,4 @@
-# TaskManager API
+# Task Manager API
 
 ## Project Overview
 
