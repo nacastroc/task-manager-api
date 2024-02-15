@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-The TaskManager API is a simple task management system that allows users to create, update, delete, and retrieve tasks. Users need to authenticate to access the API.
+The Task Manager API is a simple task management system that allows users to create, update, delete, and retrieve tasks. Users need to authenticate to access the API.
 
 ## Functional Requirements
 
@@ -30,7 +30,7 @@ The TaskManager API is a simple task management system that allows users to crea
     - Laravel 8.x (or the latest version at the time of the project)
     - MySQL or SQLite database
     - Eloquent ORM for database interaction
-    - Passport package for API authentication
+    - Sanctum package for API authentication
 
 2. **API Endpoints:**
     - `/api/register` (POST): User registration
@@ -45,7 +45,7 @@ The TaskManager API is a simple task management system that allows users to crea
     - `/api/tasks/{id}` (DELETE): Delete a specific task
 
 3. **Authentication:**
-    - Use Laravel Passport for API token-based authentication.
+    - Use Laravel Sanctum for API token-based authentication.
     - Only authenticated users should have access to certain endpoints.
 
 4. **Validation:**

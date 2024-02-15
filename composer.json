@@ -4,6 +4,7 @@
     "description": "A simple task management system.",
     "keywords": ["api", "laravel"],
     "license": "MIT",
+    "version": "0.0.0-dev",
     "require": {
         "php": "^7.3|^8.0",
         "fruitcake/laravel-cors": "^2.0",
