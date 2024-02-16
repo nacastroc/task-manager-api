@@ -10,23 +10,173 @@ class AuthControllerTest extends TestCase
 {
     use RefreshDatabase;
 
+    // Constants.
+    const TEST_USER_DATA = [
+        'name' => 'Test User',
+        'email' => 'test@example.com',
+        'password' => 'Password123*'
+    ];
+
+    protected $user;
+
+    // Helper methods.
+    private function assertUnprocessableEntity($response, $field)
+    {
+        $response->assertStatus(422)->assertJsonValidationErrors($field);
+    }
+
+    private function assertUnauthorized($response)
+    {
+        $response->assertStatus(401)->assertJson(['message' => 'Invalid email or password']);
+    }
+
+    // Test setup.
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->user = User::factory()->create(self::TEST_USER_DATA);
+    }
+
+    // Data providers.
+
     /**
-     * Test registration.
+     * Data provider for user registration test.
+     *
+     * @return array
+     */
+    public function registrationDataProvider()
+    {
+        return [
+            // Valid registration
+            [
+                ['name' => 'Test User 0', 'email' => 'test0@example.com', 'password' => 'Password123*'],
+                201,
+            ],
+            // Taken Email
+            [
+                self::TEST_USER_DATA,
+                422,
+                'email',
+            ],
+            // Invalid name
+            [
+                ['name' => '', 'email' => 'test1@example.com', 'password' => 'Password123*'],
+                422,
+                'name',
+            ],
+            // Invalid email
+            [
+                ['name' => 'Test User 2', 'email' => 'test2example.com', 'password' => 'Password123*'],
+                422,
+                'email',
+            ],
+            // Invalid password
+            [
+                ['name' => 'Test User 3', 'email' => 'test3@example.com', 'password' => 'password'],
+                422,
+                'password',
+            ],
+        ];
+    }
+
+    /**
+     * Data provider for user login test.
+     *
+     * @return array
+     */
+    public function loginDataProvider()
+    {
+        return [
+            // Valid login
+            [
+                ['email' => self::TEST_USER_DATA['email'], 'password' => self::TEST_USER_DATA['password']],
+                200,
+            ],
+            // Wrong password
+            [
+                ['email' => self::TEST_USER_DATA['email'], 'password' => 'WrongPassword123*'],
+                401,
+            ],
+            // Wrong email
+            [
+                ['email' => 'wrong@example.com', 'password' => self::TEST_USER_DATA['password']],
+                401,
+            ],
+            // Invalid email
+            [
+                ['email' => 'example.com', 'password' => self::TEST_USER_DATA['password']],
+                422,
+                'email'
+            ],
+            // Missing email
+            [
+                ['password' => self::TEST_USER_DATA['password']],
+                422,
+                'email'
+            ],
+            // Missing password
+            [
+                ['email' => self::TEST_USER_DATA['email']],
+                422,
+                'password'
+            ],
+        ];
+    }
+
+    /**
+     * Data provider for logout tests.
+     *
+     * @return array
+     */
+    public function logoutDataProvider()
+    {
+        return [
+            'logout_success' => [
+                'user' => [
+                    'email_verified_at' => now(),
+                ],
+                'expectedStatus' => 200,
+                'token' => 'token-name',
+                'message' => 'Logged out successfully',
+            ],
+            'logout_unauthenticated' => [
+                'user' => [],
+                'expectedStatus' => 401,
+                'token' => null,
+                'message' => null,
+            ],
+            'logout_unverified_email' => [
+                'user' => [
+                    'email_verified_at' => null,
+                ],
+                'expectedStatus' => 403,
+                'token' => 'test-token',
+                'message' => null,
+            ],
+        ];
+    }
+
+    /**
+     * Test user registration.
+     *
+     * @dataProvider registrationDataProvider
+     *
+     * @param array $userData
+     * @param int $expectedStatus
+     * @param string|null $expectedValidationErrors
      *
      * @return void
      */
-    public function testRegister()
+    public function testRegister($userData, $expectedStatus, $expectedValidationErrors = null)
     {
-        $userData = [
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-            'password' => 'Password123*'
-        ];
-
         $response = $this->postJson('/api/register', $userData);
 
-        $response->assertStatus(201) // 201 New entity created
-            ->assertJsonStructure([
+        $response->assertStatus($expectedStatus);
+
+        if ($expectedValidationErrors) {
+            $this->assertUnprocessableEntity($response, $expectedValidationErrors);
+        } else {
+            $response->assertJsonStructure([
                 'user' => [
                     'id',
                     'name',
@@ -35,270 +185,91 @@ class AuthControllerTest extends TestCase
                     'updated_at',
                 ],
                 'token',
-            ]);
-    }
-
-    /**
-     * Test registration with existing email.
-     *
-     * @return void
-     */
-    public function testRegisterWithExistingEmail()
-    {
-        $email = 'test@example.com';
-        $password = 'Password123*';
-
-        User::factory()->create([
-            'email' => $email,
-            'password' => $password,
-        ]);
-
-        $userData = [
-            'name' => 'Test User',
-            'email' => $email, // Invalid email: alreading in use
-            'password' => $password
-        ];
-
-        $response = $this->postJson('/api/register', $userData);
-
-        $response->assertStatus(422) // 422 Unprocessable Entity
-            ->assertJsonValidationErrors('email');
-    }
-
-    /**
-     * Test registration with invalid name.
-     *
-     * @return void
-     */
-    public function testRegisterWithInvalidName()
-    {
-        $userData = [
-            'name' => '', // Invalid user name: empty string
-            'email' => 'test@example.com',
-            'password' => 'Password123*'
-        ];
-
-        $response = $this->postJson('/api/register', $userData);
-
-        $response->assertStatus(422) // 422 Unprocessable Entity
-            ->assertJsonValidationErrors('name');
-    }
-
-    /**
-     * Test registration with invalid email.
-     *
-     * @return void
-     */
-    public function testRegisterWithInvalidEmail()
-    {
-        $userData = [
-            'name' => 'Test User',
-            'email' => 'testexample.com', // Invalid email: no @ character
-            'password' => 'Password123*'
-        ];
-
-        $response = $this->postJson('/api/register', $userData);
-
-        $response->assertStatus(422) // 422 Unprocessable Entity
-            ->assertJsonValidationErrors('email');
-    }
-
-    /**
-     * Test registration with invalid password.
-     *
-     * @return void
-     */
-    public function testRegisterWithInvalidPassword()
-    {
-        $userData = [
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-            'password' => 'password' // Invalid password: no uppercase letter, number, or special character
-        ];
-
-        $response = $this->postJson('/api/register', $userData);
-
-        $response->assertStatus(422) // 422 Unprocessable Entity
-            ->assertJsonValidationErrors('password');
-    }
-
-    /**
-     * Test login.
-     *
-     * @return void
-     */
-    public function testLogin()
-    {
-        $email = 'test@example.com';
-        $password = 'Password123*';
-
-        $user = User::factory()->create([
-            'email' => $email,
-            'password' => $password,
-        ]);
-
-        $loginData = [
-            'email' => $email,
-            'password' => $password,
-        ];
-
-        $response = $this->postJson('/api/login', $loginData);
-
-        $response->assertStatus(200) // 200 Success
-            ->assertJsonStructure([
+            ])->assertJson([
                 'user' => [
-                    'id',
-                    'name',
-                    'email',
-                    'created_at',
-                    'updated_at',
-                ],
-                'token',
-            ])
-            ->assertJson([
-                'user' => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    // 'created_at' and 'updated_at' are not compared because they are set at the time of user creation
-                ],
+                    'name' => $userData['name'],
+                    'email' => $userData['email']
+                ]
             ]);
+        }
     }
 
     /**
-     * Test login with incorrect password.
+     * Test user login.
+     *
+     * @dataProvider loginDataProvider
+     *
+     * @param array $loginData
+     * @param int $expectedStatus
+     * @param string|null $expectedValidationErrors
      *
      * @return void
      */
-    public function testLoginWithIncorrectPassword()
+    public function testLogin($loginData, $expectedStatus, $expectedValidationErrors = null)
     {
-        User::factory()->create([
-            'email' => 'test@example.com',
-            'password' => 'Password123*',
-        ]);
-
-        $loginData = [
-            'email' => 'test@example.com',
-            'password' => 'WrongPassword123*',
-        ];
-
         $response = $this->postJson('/api/login', $loginData);
 
-        $response->assertStatus(401) // 401 Unauthorized
-            ->assertJson(['message' => 'Invalid email or password']);
+        switch ($expectedStatus) {
+            case 401:
+                $this->assertUnauthorized($response);
+                break;
+            case 422:
+                $this->assertUnprocessableEntity($response, $expectedValidationErrors);
+                break;
+            default:
+                $response->assertStatus(200) // 200 Success
+                    ->assertJsonStructure([
+                        'user' => [
+                            'id',
+                            'name',
+                            'email',
+                            'email_verified_at',
+                            'created_at',
+                            'updated_at',
+                            'admin'
+                        ],
+                        'token',
+                    ])
+                    ->assertJson([
+                        'user' => [
+                            'id' => $this->user->id,
+                            'name' => $this->user->name,
+                            'email' => $this->user->email,
+                        ],
+                    ]);
+                break;
+        }
     }
 
     /**
-     * Test login with non-existent user email.
+     * Test logout with different scenarios.
+     *
+     * @dataProvider logoutDataProvider
+     *
+     * @param array $userAttributes
+     * @param int $expectedStatus
+     * @param string|null $tokenName
+     * @param string|null $expectedMessage
      *
      * @return void
      */
-    public function testLoginWithNonExistentEmail()
+    public function testLogout($userAttributes, $expectedStatus, $tokenName, $expectedMessage)
     {
-        $loginData = [
-            'email' => 'nonexistent@example.com',
-            'password' => 'Password123*',
-        ];
+        $user = User::factory()->create($userAttributes);
 
-        $response = $this->postJson('/api/login', $loginData);
-
-        $response->assertStatus(401) // 401 Unauthorized
-            ->assertJson(['message' => 'Invalid email or password']);
-    }
-
-    /**
-     * Test login with missing email.
-     *
-     * @return void
-     */
-    public function testLoginWithMissingEmail()
-    {
-        $loginData = [
-            'password' => 'Password123*',
-        ];
-
-        $response = $this->postJson('/api/login', $loginData);
-
-        $response->assertStatus(401) // 401 Unauthorized
-            ->assertJson(['message' => 'Invalid email or password']);
-    }
-
-    /**
-     * Test login with missing password.
-     *
-     * @return void
-     */
-    public function testLoginWithMissingPassword()
-    {
-        $loginData = [
-            'email' => 'test@example.com',
-        ];
-
-        $response = $this->postJson('/api/login', $loginData);
-
-        $response->assertStatus(401) // 401 Unauthorized
-            ->assertJson(['message' => 'Invalid email or password']);
-    }
-
-    /**
-     * Test logout.
-     *
-     * @return void
-     */
-    public function testLogout()
-    {
-        $user = User::factory()->create([
-            'email' => 'test@example.com',
-            'password' => 'Password123*',
-        ]);
-
-        $token = $user->createToken('token-name')->plainTextToken;
-
-        $header = [
-            'Authorization' => "Bearer $token"
-        ];
+        if ($tokenName) {
+            $token = $user->createToken($tokenName)->plainTextToken;
+            $header = ['Authorization' => "Bearer $token"];
+        } else {
+            $header = [];
+        }
 
         $response = $this->postJson('/api/logout', [], $header);
 
-        $response->assertStatus(200) // 200 Success
-            ->assertExactJson(['message' => 'Logged out successfully']);
-    }
+        $response->assertStatus($expectedStatus);
 
-    /**
-     * Test logout attempt without authenticated user.
-     *
-     * @return void
-     */
-    public function testLogoutWithoutAuthenticatedUser()
-    {
-        $response = $this->postJson('/api/logout');
-
-        $response->assertStatus(401); // 401 Unauthorized
-    }
-
-    /**
-     * Test logout attempt without verified email.
-     *
-     * @return void
-     */
-    public function testLogoutWithoutVerifiedEmail()
-    {
-        $user = User::factory()->create([
-            'email' => 'test@example.com',
-            'password' => 'Password123*',
-        ]);
-
-        $user->email_verified_at = null;
-        $user->save();
-
-        // Manually create an access token for the user
-        $token = $user->createToken('test-token')->plainTextToken;
-
-        $response = $this->postJson('/api/logout', [],
-            [
-                'Authorization' => 'Bearer ' . $token
-            ]);
-
-        $response->assertStatus(403); // 403 Forbidden (Unauthorized)
+        if ($expectedMessage) {
+            $response->assertExactJson(['message' => $expectedMessage]);
+        }
     }
 }

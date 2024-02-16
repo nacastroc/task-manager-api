@@ -34,7 +34,7 @@ class AuthController extends Controller
                 'regex:/[A-Z]/',      // must contain at least one uppercase letter
                 'regex:/[0-9]/',      // must contain at least one digit
                 'regex:/[@$!%*#?&]/', // must contain a special character
-            ],
+            ]
         ]);
 
         $user = User::create([
@@ -62,6 +62,14 @@ class AuthController extends Controller
      */
     public function login(Request $request)
     {
+        $request->validate([
+            'email' => 'required|string|email|max:255',
+            'password' => [
+                'required',
+                'string',
+            ]
+        ]);
+
         $credentials = $request->only('email', 'password');
 
         if (!Auth::attempt($credentials)) {
