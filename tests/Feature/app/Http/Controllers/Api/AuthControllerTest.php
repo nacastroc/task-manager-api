@@ -17,6 +17,7 @@ class AuthControllerTest extends TestCase
         'password' => 'Password123*'
     ];
 
+    // Attributes.
     protected $user;
 
     // Helper methods.
