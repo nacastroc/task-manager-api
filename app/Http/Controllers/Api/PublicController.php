@@ -37,13 +37,4 @@ class PublicController extends Controller
         // If HTML is preferred or the Accept header is not provided
         return view('welcome', $data);
     }
-
-    /**
-     * Returns the current version of the app from the composer.json file.
-     */
-    public function version()
-    {
-        $composer = json_decode(file_get_contents(base_path('composer.json')), true);
-        return response()->json(['version' => $composer['version']]);
-    }
 }

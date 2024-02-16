@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\EmailVerificationController;
-use App\Http\Controllers\Api\PublicController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -26,6 +25,3 @@ Route::post('/logout', [AuthController::class, 'logout'])
 Route::get('email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
     ->middleware(['signed', 'throttle:6,1'])
     ->name('verification.verify');
-
-// Public routes
-Route::get('/version', [PublicController::class, 'version']);
