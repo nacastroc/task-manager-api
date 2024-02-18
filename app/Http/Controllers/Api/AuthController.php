@@ -74,7 +74,7 @@ class AuthController extends Controller
 
         if (!Auth::attempt($credentials)) {
             return response()->json([
-                'message' => 'Invalid email or password',
+                'message' => config('constants.messages.http_401_invalid_credentials'),
             ], 401);
         }
 
@@ -97,6 +97,6 @@ class AuthController extends Controller
     {
         $request->user()->currentAccessToken()->delete();
 
-        return response()->json(['message' => 'Logged out successfully'], 200);
+        return response()->json(['message' => config('constants.messages.http_200_logout')], 200);
     }
 }

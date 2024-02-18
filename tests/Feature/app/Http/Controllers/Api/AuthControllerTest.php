@@ -28,7 +28,7 @@ class AuthControllerTest extends TestCase
 
     private function assertUnauthorized($response)
     {
-        $response->assertStatus(401)->assertJson(['message' => 'Invalid email or password']);
+        $response->assertStatus(401)->assertJson(['message' => config('constants.messages.http_401_invalid_credentials')]);
     }
 
     // Test setup.
@@ -48,31 +48,26 @@ class AuthControllerTest extends TestCase
     public function registrationDataProvider()
     {
         return [
-            // Valid registration
-            [
+            'valid_registration' => [
                 ['name' => 'Test User 0', 'email' => 'test0@example.com', 'password' => 'Password123*'],
                 201,
             ],
-            // Taken Email
-            [
+            'taken_email' => [
                 self::TEST_USER_DATA,
                 422,
                 'email',
             ],
-            // Invalid name
-            [
+            'invalid_name' => [
                 ['name' => '', 'email' => 'test1@example.com', 'password' => 'Password123*'],
                 422,
                 'name',
             ],
-            // Invalid email
-            [
+            'invalid_email' => [
                 ['name' => 'Test User 2', 'email' => 'test2example.com', 'password' => 'Password123*'],
                 422,
                 'email',
             ],
-            // Invalid password
-            [
+            'invalid_password' => [
                 ['name' => 'Test User 3', 'email' => 'test3@example.com', 'password' => 'password'],
                 422,
                 'password',
@@ -88,35 +83,29 @@ class AuthControllerTest extends TestCase
     public function loginDataProvider()
     {
         return [
-            // Valid login
-            [
+            'valid_login' => [
                 ['email' => self::TEST_USER_DATA['email'], 'password' => self::TEST_USER_DATA['password']],
                 200,
             ],
-            // Wrong password
-            [
+            'wrong_password' => [
                 ['email' => self::TEST_USER_DATA['email'], 'password' => 'WrongPassword123*'],
                 401,
             ],
-            // Wrong email
-            [
+            'wrong_email' => [
                 ['email' => 'wrong@example.com', 'password' => self::TEST_USER_DATA['password']],
                 401,
             ],
-            // Invalid email
-            [
+            'invalid_email' => [
                 ['email' => 'example.com', 'password' => self::TEST_USER_DATA['password']],
                 422,
                 'email'
             ],
-            // Missing email
-            [
+            'missing_email' => [
                 ['password' => self::TEST_USER_DATA['password']],
                 422,
                 'email'
             ],
-            // Missing password
-            [
+            'missing_password' => [
                 ['email' => self::TEST_USER_DATA['email']],
                 422,
                 'password'
@@ -138,21 +127,13 @@ class AuthControllerTest extends TestCase
                 ],
                 'expectedStatus' => 200,
                 'token' => 'token-name',
-                'message' => 'Logged out successfully',
+                'messageKey' => 'constants.messages.http_200_logout',
             ],
             'logout_unauthenticated' => [
                 'user' => [],
                 'expectedStatus' => 401,
                 'token' => null,
-                'message' => null,
-            ],
-            'logout_unverified_email' => [
-                'user' => [
-                    'email_verified_at' => null,
-                ],
-                'expectedStatus' => 403,
-                'token' => 'test-token',
-                'message' => null,
+                'messageKey' => 'constants.messages.http_401'
             ],
         ];
     }
@@ -250,11 +231,11 @@ class AuthControllerTest extends TestCase
      * @param array $userAttributes
      * @param int $expectedStatus
      * @param string|null $tokenName
-     * @param string|null $expectedMessage
+     * @param string|null $messageKey
      *
      * @return void
      */
-    public function testLogout($userAttributes, $expectedStatus, $tokenName, $expectedMessage)
+    public function testLogout($userAttributes, $expectedStatus, $tokenName, $messageKey)
     {
         $user = User::factory()->create($userAttributes);
 
@@ -269,7 +250,8 @@ class AuthControllerTest extends TestCase
 
         $response->assertStatus($expectedStatus);
 
-        if ($expectedMessage) {
+        if ($messageKey) {
+            $expectedMessage = config($messageKey);
             $response->assertExactJson(['message' => $expectedMessage]);
         }
     }

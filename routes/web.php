@@ -14,4 +14,9 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', [PublicController::class, 'welcome']);
+Route::get('/', [PublicController::class, 'welcome'])
+    ->name('home');
+Route::get('/unauthenticated', [PublicController::class, 'unauthenticated'])
+    ->name('authentication.notice');
+Route::get('/unverified', [PublicController::class, 'unverified'])
+    ->name('verification.notice');

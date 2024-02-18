@@ -13,7 +13,7 @@ use Illuminate\Http\Request;
 class PublicController extends Controller
 {
     /**
-     * Renders the welcome page
+     * Renders the welcome page.
      */
     public function welcome(Request $request)
     {
@@ -36,5 +36,21 @@ class PublicController extends Controller
 
         // If HTML is preferred or the Accept header is not provided
         return view('welcome', $data);
+    }
+
+    /**
+     * Redirect for unauthenticated requests.
+     */
+    public function unauthenticated()
+    {
+        return response()->json(['message' => config('constants.messages.http_401')], 401);
+    }
+
+    /**
+     * Redirect for unverified user requests.
+     */
+    public function unverified()
+    {
+        return response()->json(['message' => config('constants.messages.http_403_verify_email')], 403);
     }
 }
