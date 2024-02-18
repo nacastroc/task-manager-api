@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Task;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -19,11 +20,6 @@ class User extends Authenticatable implements MustVerifyEmail
     const REMEMBER_TOKEN = 'remember_token';
     const ADMIN = 'admin';
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
         self::NAME,
         self::EMAIL,
@@ -31,25 +27,21 @@ class User extends Authenticatable implements MustVerifyEmail
         self::EMAIL_VERIFIED_AT,
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
-     */
     protected $hidden = [
         self::PASSWORD,
         self::REMEMBER_TOKEN,
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
-     */
     protected $casts = [
         self::EMAIL_VERIFIED_AT => 'datetime',
         self::ADMIN => 'boolean',
     ];
+
+    protected $relations = [
+        'tasks'
+    ];
+
+    // Attributes getters/setters.
 
     public function setPasswordAttribute($password)
     {
@@ -60,5 +52,12 @@ class User extends Authenticatable implements MustVerifyEmail
     public function getIsAdminAttribute()
     {
         return $this->attributes[self::ADMIN];
+    }
+
+    // Relations definitions.
+
+    public function tasks()
+    {
+        return $this->hasMany(Task::class);
     }
 }
