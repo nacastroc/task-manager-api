@@ -7,6 +7,7 @@ use App\Jobs\SendEmailVerificationNotification;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\JsonResponse;
 
 /**
  * Class AuthController
@@ -19,7 +20,7 @@ class AuthController extends Controller
      * Register a new user.
      *
      * @param  Request  $request
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     public function register(Request $request)
     {
@@ -58,7 +59,7 @@ class AuthController extends Controller
      * Log in a user.
      *
      * @param  Request  $request
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     public function login(Request $request)
     {
@@ -91,7 +92,7 @@ class AuthController extends Controller
      * Log out the current user.
      *
      * @param  Request  $request
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     public function logout(Request $request)
     {

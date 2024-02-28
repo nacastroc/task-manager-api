@@ -28,15 +28,15 @@ Route::get('email/verify/{id}/{hash}', [EmailVerificationController::class, 'ver
     ->name('verification.verify');
 
 // Generic routes
-Route::get('/list/{model}', [ApiController::class, 'list'])
+Route::get('/{model}', [ApiController::class, 'list'])
     ->middleware('auth:sanctum', 'verified');
-Route::get('/show/{model}/{id}', [ApiController::class, 'show'])
+Route::get('/{model}/{id}', [ApiController::class, 'show'])
     ->middleware('auth:sanctum', 'verified');
-Route::post('/add/{model}', [ApiController::class, 'add'])
+Route::post('/{model}', [ApiController::class, 'create'])
     ->middleware('auth:sanctum', 'verified');
-Route::put('/edit/{model}/{id}', [ApiController::class, 'edit'])
+Route::put('/{model}/{id}', [ApiController::class, 'update'])
     ->middleware('auth:sanctum', 'verified');
-Route::delete('/delete/{model}', [ApiController::class, 'delete'])
+Route::delete('/{model}', [ApiController::class, 'delete'])
     ->middleware('auth:sanctum', 'verified');
-Route::delete('/delete/{model}/{id}', [ApiController::class, 'delete'])
+Route::delete('/{model}/{id}', [ApiController::class, 'delete'])
     ->middleware('auth:sanctum', 'verified');
