@@ -3,59 +3,18 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
-use App\Models\Task;
+use App\Services\QueryService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\JsonResponse;
 
+/**
+ * Class ApiController
+ *
+ * Handles generic model requests to the API routes.
+ */
 class ApiController extends Controller
 {
     // Helper functions.
-
-    /**
-     * Helper function to get valid columns for the model of a specified type
-     *
-     * @param Model $model Model instance
-     * @param string $type Column type
-     */
-    private function getValidColumns($model, $type = null)
-    {
-        $table = $model->getTable();
-        $columns = Schema::getColumnListing($table);
-        $filteredColumns = [];
-
-        foreach ($columns as $column) {
-            $columnType = Schema::getColumnType($table, $column);
-            if ($columnType == $type) {
-                $filteredColumns[] = $column;
-            }
-        }
-
-        return $type ? $filteredColumns : $columns;
-    }
-
-
-    /**
-     * Return new instance of model based on route parameter.
-     * `$model = getModelInstanceForRoute('users'); // Returns new User`
-     *
-     * @param string route The route callback for the model.
-     */
-    private function getModelInstanceForRoute($route)
-    {
-        switch ($route) {
-            case 'users':
-                return new User;
-                break;
-            case 'tasks':
-                return new Task;
-                break;
-            default:
-                return null;
-                break;
-        }
-    }
 
     public function save()
     {
@@ -64,61 +23,94 @@ class ApiController extends Controller
 
     // Controller endpoint functions.
 
-    public function list(Request $request)
+    /**
+     * Returns a list, paginated or not, of a given model.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function list(Request $request, QueryService $queryService)
     {
-        $modelName = $request->route('model');
-
         // Create an instance of the model.
-        $model = $this->getModelInstanceForRoute($modelName);
-
+        $modelName = $request->route('model');
+        $model = $queryService->getModelInstanceForRoute($modelName);
         if ($model === null) {
             return response()->json(['message' => 'Model class not found'], 404);
         }
+        $table = $model->getTable();
+
+        $request->validate([
+            'filter' => 'string|regex:/^\[(([a-z_][a-z0-9_]*)=([^,]*),?)+\]$/',
+        ]);
+
+        // Query to fetch items.
+        $query = $model->query();
 
         // Get query params.
+        // Pagination.
         $page = $request->input('page', 1); // Page number.
         $perPage = $request->input('per_page', 10); // Number of items per page.
-        $columns = explode(',', $request->input('columns', '*')); // Columns to be selected.
-        $with = $request->input('with') ? explode(',', $request->input('with')) : []; // Associations to be eager loaded.
 
-        // Validate columns
-        $validColumns = $this->getValidColumns($model);
+        // Select columns.
+        $columns = explode(',', $request->input('columns', '*')); // Columns to be selected.
+        // Associations to be eager loaded.
+        $with = $request->input('with') ? explode(',', $request->input('with')) : [];
+
+        // Validate columns.
+        $validColumns = $queryService->getValidColumns($table);
         if ($columns != ['*']) {
             $invalidColumns = array_diff($columns, $validColumns);
             if (!empty($invalidColumns)) {
                 return response()->json(['message' => 'Invalid columns: ' . implode(', ', $invalidColumns)], 422);
             }
+            if (count($with) > 0) {
+                $columns = $queryService->appendKeysToSelect($validColumns, $columns);
+            }
         }
 
-        // Validate associations
+        // Validate associations.
         $invalidAssociations = array_diff($with, $model->getRelations());
         if (!empty($invalidAssociations)) {
             return response()->json(['message' => 'Invalid associations: ' . implode(', ', $invalidAssociations)], 422);
         }
 
-        // Query to fetch items
-        $query = $model->query();
-
-        // Select specific columns
+        // Select specific columns.
         $query->select($columns);
 
-        // Eager load associations
+        // Eager load associations.
         $query->with($with);
 
-        // TODO: Search by attribute value
+        // Search by attribute value pairs in the filter input.
+        $filter = $request->input('filter');
+        if ($filter) {
+            // Parse the filter parameter.
+            $filter = trim($filter, '[]');
+            $pairs = explode(',', $filter);
+            foreach ($pairs as $pair) {
+                list($key, $value) = explode('=', $pair);
+                // Validate key in model columns.
+                if (!in_array($key, $validColumns)) {
+                    return response()->json(['message' => 'Invalid filter key: ' . $key], 422);
+                }
+                $value = $queryService->setColumnValueType($table, $key, $value);
+                // Add filter key-value pair to the query's where clause.
+                $query->where($key, $value);
+            }
+        }
 
-        // TODO: Generic string search by selected columns
+        // Generic string search.
         $searchString = $request->input('search');
+        // Generic string search by selected columns.
         if ($searchString) {
-            $validSearchColumns = $this->getValidColumns($model, 'varchar');
+            $validSearchColumns = $queryService->getValidColumns($table, ['string', 'text']);
             $searchColumns = $columns != ['*'] ? array_intersect($columns, $validSearchColumns) : $validSearchColumns;
             foreach ($searchColumns as $column) {
                 $query->orWhere($column, 'LIKE', '%' . $searchString . '%');
             }
         }
 
-        // Get results
-             $items = $perPage > 0
+        // Get results.
+        $items = $perPage > 0
             ? $query->paginate($perPage, $columns, 'page', $page)
             : $query->get();
 
@@ -127,23 +119,23 @@ class ApiController extends Controller
 
     public function show(Request $request)
     {
-        // TODO: implement show model by id
+        // TODO: implement show model by id.
         return response()->json([
             'message' => 'TODO'
         ]);
     }
 
-    public function add(Request $request)
+    public function create(Request $request)
     {
-        // TODO: implement add model
+        // TODO: implement add model.
         return response()->json([
             'message' => 'TODO'
         ]);
     }
 
-    public function edit(Request $request)
+    public function update(Request $request)
     {
-        // TODO: implement edit model
+        // TODO: implement edit model.
         return response()->json([
             'message' => 'TODO'
         ]);
@@ -151,7 +143,7 @@ class ApiController extends Controller
 
     public function delete(Request $request)
     {
-        // TODO: implement delete model by id
+        // TODO: implement delete model by id or id batch.
         return response()->json([
             'message' => 'TODO'
         ]);
