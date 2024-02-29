@@ -103,6 +103,9 @@ class QueryService
      */
     public function setColumnValueType($table, $column, $value)
     {
+        $columns = Schema::getColumnListing($table);
+        if (!in_array($column, $columns))
+            throw new Exception('No column of given name found on table.');
         $columnType = Schema::getColumnType($table, $column);
         // Cast $value according to database column type.
         switch ($columnType) {

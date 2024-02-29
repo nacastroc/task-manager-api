@@ -55,6 +55,44 @@ class QueryServiceTest extends TestCase
         ];
     }
 
+    public function appendKeysToSelectProvider()
+    {
+        return [
+            'users table returns adds id to selected columns' => [
+                'users', ['name', 'email'],
+                ['name', 'email', 'id']
+            ],
+            'tasks table returns adds id, user_id to selected columns' => [
+                'tasks', ['title'],
+                ['title', 'id', 'user_id']
+            ],
+        ];
+    }
+
+    public function setColumnValueTypeProvider()
+    {
+        return [
+            'integer column type returns integer value' => [
+                'users', 'id', '123', 123
+            ],
+            'float column type returns float value' => [
+                'users', 'balance', '12.34', 12.34
+            ],
+            'boolean column type returns boolean value' => [
+                'users', 'is_active', '1', true
+            ],
+            'string column type returns string value' => [
+                'users', 'name', 'John Doe', 'John Doe'
+            ],
+            'datetime column type returns string value' => [
+                'users', 'created_at', '2020-12-01', '2020-12-01'
+            ],
+            'invalid column throws exception' => [
+                'users', 'number', '2020-12-01', '2020-12-01'
+            ],
+        ];
+    }
+
     // Test cases
 
     /**
@@ -87,5 +125,36 @@ class QueryServiceTest extends TestCase
         $this->assertEquals($expectedColumns, $actualColumns);
     }
 
+    /**
+     * @dataProvider appendKeysToSelectProvider
+     */
+    public function test_appendKeysToSelect($table, $columns, $expectedColumns)
+    {
+        try {
+            $validColumns = $this->service->getValidColumns($table);
+            $actualColumns = $this->service->appendKeysToSelect($validColumns, $columns);
+        } catch (\Throwable $th) {
+            $this->expectException(Exception::class);
+            $this->assertEquals($th->getMessage(), 'Invalid type. Type must be a string or an array of strings.');
+        }
+        $this->assertEquals($expectedColumns, $actualColumns);
+    }
+
+    /**
+     * @dataProvider setColumnValueTypeProvider
+     */
+    public function test_setColumnValueType($table, $column, $value, $expectedResult)
+    {
+        // Act
+        try {
+            $result = $this->service->setColumnValueType($table, $column, $value);
+        } catch (\Throwable $th) {
+            $this->expectException(Exception::class);
+            $this->assertEquals($th->getMessage(), 'No column of given name found on table.');
+        }
+
+        // Assert
+        $this->assertEquals($expectedResult, $result);
+    }
 
 }
