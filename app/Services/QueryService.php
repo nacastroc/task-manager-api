@@ -50,9 +50,12 @@ class QueryService
             if (is_string($type)) {
                 $types = [$type];
             } elseif (is_array($type)) {
+                foreach ($type as $key => $value) {
+                    if (!is_string($value)) {
+                        throw new Exception('Invalid type. Type must be a string or an array of strings.');
+                    }
+                }
                 $types = $type;
-            } else {
-                throw new Exception('Invalid type. Type must be a string or an array of strings.');
             }
             foreach ($columns as $column) {
                 $columnType = Schema::getColumnType($table, $column);
