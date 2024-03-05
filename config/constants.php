@@ -20,6 +20,7 @@ return [
         'http_403' => 'Unauthorized.',
         'http_403_verify_email' => 'Your email address is not verified.',
         'http_404_model_class' => 'Model class not found.',
+        'http_404_model_object' => 'Model object not found.',
         'http_500' => 'An internal server error occurred.',
     ],
     'validation' => [

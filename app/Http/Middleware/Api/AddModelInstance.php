@@ -7,12 +7,12 @@ use Closure;
 use Illuminate\Http\Request;
 
 /**
- * Middleware to add model instance to request data.
+ * Middleware to add model class instance to request data.
  *
- * This middleware fetches an instance of a model based on the route parameter
+ * This middleware fetches an instance of a model class based on the route parameter
  * and adds it to the request data for further processing.
  */
-class AddModel
+class AddModelInstance
 {
     protected $queryService;
 
@@ -31,8 +31,8 @@ class AddModel
     public function handle(Request $request, Closure $next)
     {
         // Create an instance of the model.
-        $modelName = $request->route('model');
-        $model = $this->queryService->getModelInstanceForRoute($modelName);
+        $route = $request->route('model');
+        $model = $this->queryService->getModelInstanceForRoute($route);
 
         // Check if the model instance exists.
         if ($model === null) {
