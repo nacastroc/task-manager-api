@@ -19,6 +19,10 @@ return [
         'http_401_invalid_credentials' => 'Invalid email or password.',
         'http_403' => 'Unauthorized.',
         'http_403_verify_email' => 'Your email address is not verified.',
+        'http_404_model_class' => 'Model class not found.',
         'http_500' => 'An internal server error occurred.',
+    ],
+    'validation' => [
+        'model_routes' => 'user|tasks'
     ]
 ];

@@ -31,14 +31,8 @@ class ApiController extends Controller
      */
     public function list(Request $request, QueryService $queryService)
     {
-        // Create an instance of the model.
-        $modelName = $request->route('model');
-        $model = $queryService->getModelInstanceForRoute($modelName);
-        if ($model === null) {
-            return response()->json(['message' => 'Model class not found'], 404);
-        }
+        $model = $request->input('data-model');
         $table = $model->getTable();
-
         $request->validate([
             'filter' => 'string|regex:/^\[(([a-z_][a-z0-9_]*)=([^,]*),?)+\]$/',
         ]);

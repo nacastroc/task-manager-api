@@ -28,15 +28,18 @@ Route::get('email/verify/{id}/{hash}', [EmailVerificationController::class, 'ver
     ->name('verification.verify');
 
 // Generic routes
-Route::get('/{model}', [ApiController::class, 'list'])
-    ->middleware('auth:sanctum', 'verified');
-Route::get('/{model}/{id}', [ApiController::class, 'show'])
-    ->middleware('auth:sanctum', 'verified');
-Route::post('/{model}', [ApiController::class, 'create'])
-    ->middleware('auth:sanctum', 'verified');
-Route::put('/{model}/{id}', [ApiController::class, 'update'])
-    ->middleware('auth:sanctum', 'verified');
-Route::delete('/{model}', [ApiController::class, 'delete'])
-    ->middleware('auth:sanctum', 'verified');
-Route::delete('/{model}/{id}', [ApiController::class, 'delete'])
-    ->middleware('auth:sanctum', 'verified');
+Route::middleware(['auth:sanctum', 'verified', 'add.model'])->group(function () {
+    $allowedModels = config('constants.messages.validation.model_routes');
+    Route::get('/{model}', [ApiController::class, 'list'])
+        ->where('model', $allowedModels);
+    Route::get('/{model}/{id}', [ApiController::class, 'show'])
+        ->where('model', $allowedModels);
+    Route::post('/{model}', [ApiController::class, 'create'])
+        ->where('model', $allowedModels);
+    Route::put('/{model}/{id}', [ApiController::class, 'update'])
+        ->where('model', $allowedModels);
+    Route::delete('/{model}', [ApiController::class, 'delete'])
+        ->where('model', $allowedModels);
+    Route::delete('/{model}/{id}', [ApiController::class, 'delete'])
+        ->where('model', $allowedModels);
+});
