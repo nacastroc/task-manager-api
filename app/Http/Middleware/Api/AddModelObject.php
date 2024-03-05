@@ -8,10 +8,10 @@ use Illuminate\Http\Request;
 /**
  * Middleware to add model instance object to request data.
  *
- * This middleware fetches an object instance of a model based
- * on the route parameter _id_, and adds it to the request data
- * for further processing. It requires the usage
- * of the _AddModelInstance_ middleware as its predecessor.
+ * This middleware fetches an object instance of a model
+ * for a `/{model}/{id}` route, and adds it to the request data
+ * for further processing. It must be preceded by the usage
+ * of the `\App\Http\Middleware\Api\AddModelObject::class` middleware.
  */
 class AddModelObject
 {
@@ -26,9 +26,18 @@ class AddModelObject
     {
         $id = $request->route('id');
         $model = $request->input('data-model');
+        $columns = $request->input('data-select-columns');
+        $with = $request->input('data-select-with');
 
         // Get the model instance object for the given id.
-        $modelObject = $model::find($id);
+        $modelObject = null;
+        if ($columns && $with) {
+            $modelObject = $model::with($with)->find($id, $columns);
+        } elseif ($columns && !$with) {
+            $modelObject = $model::find($id, $columns);
+        } else {
+            $modelObject = $model::find($id);
+        }
 
         if (!$modelObject) {
             return response()->json(['message' => config('constants.messages.http_404_model_object')], 404);

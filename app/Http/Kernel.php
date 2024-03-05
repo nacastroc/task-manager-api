@@ -63,7 +63,9 @@ class Kernel extends HttpKernel
         'signed' => \Illuminate\Routing\Middleware\ValidateSignature::class,
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
+        // API middlewares
         'add.model' => \App\Http\Middleware\Api\AddModelInstance::class,
         'add.model.object' => \App\Http\Middleware\Api\AddModelObject::class,
+        'select.columns' => \App\Http\Middleware\Api\SelectColumns::class,
     ];
 }

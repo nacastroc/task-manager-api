@@ -37,36 +37,17 @@ class ApiController extends Controller
             'filter' => 'string|regex:/^\[(([a-z_][a-z0-9_]*)=([^,]*),?)+\]$/',
         ]);
 
-        // Query to fetch items.
-        $query = $model->query();
-
         // Get query params.
         // Pagination.
         $page = $request->input('page', 1); // Page number.
         $perPage = $request->input('per_page', 10); // Number of items per page.
+        // Columns for select
+        $columns = $request->input('data-select-columns');
+        // Associations for select
+        $with = $request->input('data-select-with');
 
-        // Select columns.
-        $columns = explode(',', $request->input('columns', '*')); // Columns to be selected.
-        // Associations to be eager loaded.
-        $with = $request->input('with') ? explode(',', $request->input('with')) : [];
-
-        // Validate columns.
-        $validColumns = $queryService->getValidColumns($table);
-        if ($columns != ['*']) {
-            $invalidColumns = array_diff($columns, $validColumns);
-            if (!empty($invalidColumns)) {
-                return response()->json(['message' => 'Invalid columns: ' . implode(', ', $invalidColumns)], 422);
-            }
-            if (count($with) > 0) {
-                $columns = $queryService->appendKeysToSelect($validColumns, $columns);
-            }
-        }
-
-        // Validate associations.
-        $invalidAssociations = array_diff($with, $model->getRelations());
-        if (!empty($invalidAssociations)) {
-            return response()->json(['message' => 'Invalid associations: ' . implode(', ', $invalidAssociations)], 422);
-        }
+        // Query to fetch items.
+        $query = $model->query();
 
         // Select specific columns.
         $query->select($columns);
@@ -83,7 +64,7 @@ class ApiController extends Controller
             foreach ($pairs as $pair) {
                 list($key, $value) = explode('=', $pair);
                 // Validate key in model columns.
-                if (!in_array($key, $validColumns)) {
+                if (!in_array($key, $queryService->getValidColumns($table))) {
                     return response()->json(['message' => 'Invalid filter key: ' . $key], 422);
                 }
                 $value = $queryService->setColumnValueType($table, $key, $value);
