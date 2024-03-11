@@ -1,4 +1,6 @@
-# Task Manager API
+# task-manager-api
+
+Task Manager Laravel 8 API
 
 ## Project Overview
 
