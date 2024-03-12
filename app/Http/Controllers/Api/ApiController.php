@@ -27,6 +27,7 @@ class ApiController extends Controller
      * Returns a list, paginated or not, of a given model.
      *
      * @param Request $request
+     * @param QueryService $queryService
      * @return JsonResponse
      */
     public function list(Request $request, QueryService $queryService)
@@ -92,12 +93,29 @@ class ApiController extends Controller
         return response()->json($items);
     }
 
+    /**
+     * Returns an instance of a model object based on route id.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
     public function show(Request $request)
     {
-        // TODO: implement show model by id.
-        return response()->json([
-            'message' => 'TODO'
-        ]);
+        $route = $request->route('model');
+        $model = $request->input('data-model');
+        $id = $request->route('id');
+
+        // Columns for select
+        $columns = $request->input('data-select-columns');
+
+        // Associations for select
+        $with = $request->input('data-select-with');
+
+        $item = $model::with($with)->find($id, $columns);
+
+        if (!$item) return response()->json(['message' => "Object of {$route} with id {$id} not found"], 404);
+
+        return response()->json($item);
     }
 
     public function create(Request $request)

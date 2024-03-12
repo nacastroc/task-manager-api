@@ -6,18 +6,50 @@ use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
 
 class ApiControllerTest extends TestCase
 {
     use DatabaseMigrations, RefreshDatabase;
 
+    // Constants.
+    const PAGINATED_JSON_STRUCTURE = [
+        'current_page',
+        'first_page_url',
+        'from',
+        'last_page',
+        'last_page_url',
+        'links',
+        'next_page_url',
+        'path',
+        'per_page',
+        'prev_page_url',
+        'to',
+        'total'
+    ];
+    const TASK_JSON_STRUCTURE = [
+        'id',
+        'user_id',
+        'title',
+        'description',
+        'due_date',
+        'created_at',
+        'updated_at',
+    ];
+    const USER_JSON_STRUCTURE = [
+        'id',
+        'name',
+        'email',
+        'email_verified_at',
+        'created_at',
+        'updated_at',
+        'admin'
+    ];
+
+    // Attributes
     protected $baseRoute;
     protected $tasks;
     protected $users;
-
-    // Helper functions
 
     // Test data providers
 
@@ -28,47 +60,14 @@ class ApiControllerTest extends TestCase
      */
     public function listDataProvider()
     {
-        $commonPaginatedJsonStructure = [
-            'current_page',
-            'first_page_url',
-            'from',
-            'last_page',
-            'last_page_url',
-            'links',
-            'next_page_url',
-            'path',
-            'per_page',
-            'prev_page_url',
-            'to',
-            'total'
-        ];
-        $userJsonStructure = [
-            'id',
-            'name',
-            'email',
-            'email_verified_at',
-            'created_at',
-            'updated_at',
-            'admin'
-        ];
-        $taskJsonStructure = [
-            'id',
-            'user_id',
-            'title',
-            'description',
-            'due_date',
-            'created_at',
-            'updated_at',
-        ];
-
         return [
             'paginated tasks' => [
                 'model' => 'tasks',
                 'query' => '',
                 'admin' => false,
                 'expectedJsonStructure' => [
-                    'data' => [$taskJsonStructure]
-                ] + $commonPaginatedJsonStructure,
+                    'data' => [self::TASK_JSON_STRUCTURE]
+                ] + self::PAGINATED_JSON_STRUCTURE,
                 'expectedStatus' => 200,
                 'messageKey' => null
             ],
@@ -78,9 +77,9 @@ class ApiControllerTest extends TestCase
                 'admin' => false,
                 'expectedJsonStructure' => [
                     'data' => [
-                        $taskJsonStructure + [['user' => [$userJsonStructure]]]
+                        self::TASK_JSON_STRUCTURE + [['user' => [self::USER_JSON_STRUCTURE]]]
                     ]
-                ] + $commonPaginatedJsonStructure,
+                ] + self::PAGINATED_JSON_STRUCTURE,
                 'expectedStatus' => 200,
                 'messageKey' => null
             ],
@@ -89,8 +88,8 @@ class ApiControllerTest extends TestCase
                 'query' => '',
                 'admin' => false,
                 'expectedJsonStructure' => [
-                    'data' => [$userJsonStructure]
-                ] + $commonPaginatedJsonStructure,
+                    'data' => [self::USER_JSON_STRUCTURE]
+                ] + self::PAGINATED_JSON_STRUCTURE,
                 'expectedStatus' => 200,
                 'messageKey' => null
             ],
@@ -102,9 +101,9 @@ class ApiControllerTest extends TestCase
                     'data' => [[
                         'id',
                         'name',
-                        'tasks' => [$taskJsonStructure]
+                        'tasks' => [self::TASK_JSON_STRUCTURE]
                     ]],
-                ] + $commonPaginatedJsonStructure,
+                ] + self::PAGINATED_JSON_STRUCTURE,
                 'expectedStatus' => 200,
                 'messageKey' => null
             ],
@@ -112,7 +111,7 @@ class ApiControllerTest extends TestCase
                 'model' => 'tasks',
                 'query' => '?per_page=0',
                 'admin' => false,
-                'expectedJsonStructure' => [$taskJsonStructure],
+                'expectedJsonStructure' => [self::TASK_JSON_STRUCTURE],
                 'expectedStatus' => 200,
                 'messageKey' => null
             ],
@@ -127,6 +126,54 @@ class ApiControllerTest extends TestCase
         ];
     }
 
+    /**
+     * Data provider for show tests.
+     *
+     * @return array
+     */
+    public function showDataProvider()
+    {
+        return [
+            'valid object' => [
+                'model' => 'tasks',
+                'query' => '',
+                'admin' => false,
+                'expectedJsonStructure' => self::TASK_JSON_STRUCTURE,
+                'expectedStatus' => 200,
+            ],
+            'valid object columns' => [
+                'model' => 'tasks',
+                'query' => '?columns=id,description',
+                'admin' => false,
+                'expectedJsonStructure' => ['id', 'description'],
+                'expectedStatus' => 200,
+            ],
+            'valid object association' => [
+                'model' => 'tasks',
+                'query' => '?with=user',
+                'admin' => false,
+                'expectedJsonStructure' => [
+                    'user' => self::USER_JSON_STRUCTURE,
+                ] + self::TASK_JSON_STRUCTURE,
+                'expectedStatus' => 200,
+            ],
+            'object not found' => [
+                'model' => 'tasks',
+                'query' => '',
+                'admin' => false,
+                'expectedJsonStructure' => null,
+                'expectedStatus' => 404,
+            ],
+            'unauthenticated' => [
+                'model' => 'tasks',
+                'query' => '',
+                'admin' => false,
+                'expectedJsonStructure' => null,
+                'expectedStatus' => 401,
+            ]
+        ];
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -136,7 +183,7 @@ class ApiControllerTest extends TestCase
     }
 
     /**
-     * A basic feature test example.
+     * Test list endpoint.
      *
      * @dataProvider listDataProvider
      *
@@ -164,16 +211,63 @@ class ApiControllerTest extends TestCase
 
         $response = $this->getJson($this->baseRoute . $model . '/' . $query, $headers);
 
+        // Assert response message
         if ($messageKey) {
-            // Assert response message
             $response->assertExactJson(['message' => config($messageKey)]);
         }
 
+        // Assert response data structure
         if ($expectedJsonStructure) {
-            // Assert response data structure
             $response->assertJsonStructure($expectedJsonStructure);
         }
 
+        // Assert response status
+        $response->assertStatus($expectedStatus);
+    }
+
+    /**
+     * Test show endpoint.
+     *
+     * @dataProvider showDataProvider
+     *
+     * @return void
+     */
+    public function testShow($model, $query, $admin, $expectedJsonStructure, $expectedStatus)
+    {
+        $user = $this->users->firstWhere('admin', $admin);
+
+        // Ensure that $user is not null before trying to create a token
+        if ($user) {
+            $token = $user->createToken('token-name')->plainTextToken;
+        } else {
+            $token = '';
+        }
+
+        $headers = [
+            'Accept' => 'application/json',
+        ];
+
+        // Add Authorization header only if the status code is not expected to be 401
+        if ($expectedStatus !== 401) {
+            $headers['Authorization'] = 'Bearer ' . $token;
+        }
+
+        $id = 'null';
+
+        if ($expectedStatus !== 404) {
+            // Get random valid id
+            $data = $model == 'user' ? $this->users : $this->tasks;
+            $id = $data->random()->id;
+        }
+
+        $response = $this->getJson($this->baseRoute . $model . '/' . $id . '/' . $query, $headers);
+
+        // Assert response data structure
+        if ($expectedJsonStructure) {
+            $response->assertJsonStructure($expectedJsonStructure);
+        }
+
+        // Assert response status
         $response->assertStatus($expectedStatus);
     }
 }
