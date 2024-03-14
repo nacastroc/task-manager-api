@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Feature\app\Http\Controller\Api;
+namespace Tests\Feature\Http\Controller\Api;
 
 use App\Models\Task;
 use App\Models\User;

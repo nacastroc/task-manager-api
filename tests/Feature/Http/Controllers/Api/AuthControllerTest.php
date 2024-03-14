@@ -1,10 +1,10 @@
 <?php
 
-namespace Tests\Feature;
+namespace Tests\Feature\Http\Controller\Api;
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
-use App\Models\User;
 
 class AuthControllerTest extends TestCase
 {
@@ -122,15 +122,11 @@ class AuthControllerTest extends TestCase
     {
         return [
             'logout_success' => [
-                'user' => [
-                    'email_verified_at' => now(),
-                ],
                 'expectedStatus' => 200,
                 'token' => 'token-name',
                 'messageKey' => 'constants.messages.http_200_logout',
             ],
             'logout_unauthenticated' => [
-                'user' => [],
                 'expectedStatus' => 401,
                 'token' => null,
                 'messageKey' => 'constants.messages.http_401'
@@ -235,9 +231,9 @@ class AuthControllerTest extends TestCase
      *
      * @return void
      */
-    public function testLogout($userAttributes, $expectedStatus, $tokenName, $messageKey)
+    public function testLogout($expectedStatus, $tokenName, $messageKey)
     {
-        $user = User::factory()->create($userAttributes);
+        $user = User::factory()->create();
 
         if ($tokenName) {
             $token = $user->createToken($tokenName)->plainTextToken;
