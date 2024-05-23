@@ -142,7 +142,6 @@ class ApiController extends Controller
     {
         $user = $request->user();
         $model = $request->input('data-model');
-        $data = [];
 
         if ($model instanceof Task) {
             $validData = $validatorService->validateTaskPost($request);
@@ -152,7 +151,7 @@ class ApiController extends Controller
                 'due_date' => $validData['due_date'],
             ]);
             return response()->json([
-                'message' => config('constants.messages.http_200')
+                'message' => config('constants.messages.http_201')
             ]);
         } else {
             response()->json(['message' => config('constants.messages.http_403')], 403);

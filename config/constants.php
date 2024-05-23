@@ -14,6 +14,7 @@ return [
     'messages' => [
         // HTTP responses
         'http_200' => 'OK.',
+        'http_201' => 'Created.',
         'http_400' => 'Bad Request.',
         'http_401' => 'Unauthorized.',
         'http_401_invalid_credentials' => 'Invalid email or password.',
