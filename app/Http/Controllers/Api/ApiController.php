@@ -18,7 +18,7 @@ class ApiController extends Controller
 
     public function save()
     {
-        // TODO: model instance save logic
+        // TODO
     }
 
     // Controller endpoint functions.
@@ -120,25 +120,34 @@ class ApiController extends Controller
 
     public function create(Request $request)
     {
-        // TODO: implement add model.
+        // TODO
+
         return response()->json([
-            'message' => 'TODO'
+            'message' => config('constants.messages.http_200')
         ]);
     }
 
     public function update(Request $request)
     {
-        // TODO: implement edit model.
+        // TODO
+
         return response()->json([
-            'message' => 'TODO'
+            'message' => config('constants.messages.http_200')
         ]);
     }
 
     public function delete(Request $request)
     {
-        // TODO: implement delete model by id or id batch.
+        $request->validate([
+            'ids' =>  'required'
+        ]);
+
+        $model = $request->input('data-model');
+        $ids = explode(',', $request->ids);
+        $model::destroy($ids);
+
         return response()->json([
-            'message' => 'TODO'
+            'message' => config('constants.messages.http_200')
         ]);
     }
 }

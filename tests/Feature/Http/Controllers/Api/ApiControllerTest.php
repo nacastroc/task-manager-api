@@ -174,6 +174,53 @@ class ApiControllerTest extends TestCase
         ];
     }
 
+    /**
+     * Data provider for delete tests.
+     *
+     * @return array
+     */
+    public function deleteDataProvider()
+    {
+        return [
+            'user delete by non-admin' => [
+                'model' => 'user',
+                'admin' => false,
+                'expectedStatus' => 403,
+                'messageKey' => 'constants.messages.http_403'
+            ],
+            'user cannot self-delete' => [
+                'model' => 'user',
+                'admin' => true,
+                'expectedStatus' => 403,
+                'messageKey' => 'constants.messages.http_403_self_delete'
+            ],
+            'admin can delete users' => [
+                'model' => 'user',
+                'admin' => true,
+                'expectedStatus' => 200,
+                'messageKey' => null
+            ],
+            'admin can delete tasks' => [
+                'model' => 'tasks',
+                'admin' => true,
+                'expectedStatus' => 200,
+                'messageKey' => null
+            ],
+            'user can delete his tasks' => [
+                'model' => 'tasks',
+                'admin' => false,
+                'expectedStatus' => 200,
+                'messageKey' => null
+            ],
+            'user cannot delete another user\'s tasks' => [
+                'model' => 'tasks',
+                'admin' => false,
+                'expectedStatus' => 403,
+                'messageKey' => 'constants.messages.http_403'
+            ]
+        ];
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -194,11 +241,7 @@ class ApiControllerTest extends TestCase
         $user = $this->users->firstWhere('admin', $admin);
 
         // Ensure that $user is not null before trying to create a token
-        if ($user) {
-            $token = $user->createToken('token-name')->plainTextToken;
-        } else {
-            $token = '';
-        }
+        $token = $user ? $user->createToken('token-name')->plainTextToken : '';
 
         $headers = [
             'Accept' => 'application/json',
@@ -237,11 +280,7 @@ class ApiControllerTest extends TestCase
         $user = $this->users->firstWhere('admin', $admin);
 
         // Ensure that $user is not null before trying to create a token
-        if ($user) {
-            $token = $user->createToken('token-name')->plainTextToken;
-        } else {
-            $token = '';
-        }
+        $token = $user ? $user->createToken('token-name')->plainTextToken : '';
 
         $headers = [
             'Accept' => 'application/json',
@@ -256,7 +295,7 @@ class ApiControllerTest extends TestCase
 
         if ($expectedStatus !== 404) {
             // Get random valid id
-            $data = $model == 'user' ? $this->users : $this->tasks;
+            $data = $model === 'user' ? $this->users : $this->tasks;
             $id = $data->random()->id;
         }
 
@@ -265,6 +304,57 @@ class ApiControllerTest extends TestCase
         // Assert response data structure
         if ($expectedJsonStructure) {
             $response->assertJsonStructure($expectedJsonStructure);
+        }
+
+        // Assert response status
+        $response->assertStatus($expectedStatus);
+    }
+
+    /**
+     * Test delete endpoint.
+     *
+     * @dataProvider deleteDataProvider
+     */
+    public function testDelete($model, $admin, $expectedStatus, $messageKey)
+    {
+        $user = $this->users->firstWhere('admin', $admin);
+
+        // Ensure that $user is not null before trying to create a token
+        $token = $user ? $user->createToken('token-name')->plainTextToken : '';
+
+        $headers = [
+            'Accept' => 'application/json',
+        ];
+
+        switch ($messageKey) {
+            case 'constants.messages.http_403_self_delete':
+                $data['ids'] = $this->users->firstWhere('id', $user->id)->id;
+                break;
+            case 'constants.messages.http_403':
+                $ids = $model === 'user'
+                    ? User::where('id', '!=', $user->id)->first()->id
+                    : Task::where('user_id', '!=', $user->id)->first()->id;
+                $data['ids'] = "{$ids}";
+                break;
+            default:
+                $collection = $model === 'user'
+                    ? User::where('id', '!=', $user->id)->limit(5)->get()->toArray()
+                    : Task::where('user_id', '=', $user->id)->limit(5)->get()->toArray();
+                $ids = array_map(function ($n) {
+                    return $n['id'];
+                }, $collection);
+                $data['ids'] = implode(',', $ids);
+                break;
+        }
+
+        // Add Authorization header only if the status code is not expected to be 401
+        if ($expectedStatus !== 401) $headers['Authorization'] = 'Bearer ' . $token;
+
+        $response = $this->deleteJson($this->baseRoute . $model, $data, $headers);
+
+        // Assert response message
+        if ($messageKey) {
+            $response->assertExactJson(['message' => config($messageKey)]);
         }
 
         // Assert response status

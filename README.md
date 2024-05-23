@@ -38,13 +38,15 @@ The Task Manager API is a simple task management system that allows users to cre
     - `/api/register` (POST): User registration
     - `/api/login` (POST): User login
     - `/api/logout` (POST): User logout
-    - `/api/user` (GET): Retrieve user profile
-    - `/api/user` (PUT): Update user profile
+    - `/api/user` (GET): Retrieve users list
+    - `/api/user` (DELETE): Delete users
+    - `/api/user/{id}` (GET): Retrieve user profile
+    - `/api/user/{id}` (PUT): Update user profile
     - `/api/tasks` (GET): Retrieve user's tasks
     - `/api/tasks` (POST): Create a new task
+    - `/api/tasks` (DELETE): Delete tasks
     - `/api/tasks/{id}` (GET): Retrieve a specific task
     - `/api/tasks/{id}` (PUT): Update a specific task
-    - `/api/tasks/{id}` (DELETE): Delete a specific task
 
 3. **Authentication:**
     - Use Laravel Sanctum for API token-based authentication.

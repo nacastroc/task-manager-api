@@ -67,5 +67,6 @@ class Kernel extends HttpKernel
         'add.model' => \App\Http\Middleware\Api\AddModelInstance::class,
         'add.model.object' => \App\Http\Middleware\Api\AddModelObject::class,
         'select.columns' => \App\Http\Middleware\Api\SelectColumns::class,
+        'route.security' => \App\Http\Middleware\Api\RouteSecurity::class,
     ];
 }

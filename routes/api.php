@@ -28,7 +28,7 @@ Route::get('email/verify/{id}/{hash}', [EmailVerificationController::class, 'ver
     ->name('verification.verify');
 
 // Generic routes
-Route::middleware(['auth:sanctum', 'verified', 'add.model'])->group(function () {
+Route::middleware(['auth:sanctum', 'verified', 'add.model', 'route.security'])->group(function () {
     $modelRoutes = config('constants.validation.model_routes');
 
     Route::get('/{model}', [ApiController::class, 'list'])
@@ -36,14 +36,14 @@ Route::middleware(['auth:sanctum', 'verified', 'add.model'])->group(function () 
         ->middleware('select.columns');
     Route::post('/{model}', [ApiController::class, 'create'])
         ->where('model', $modelRoutes);
+    Route::delete('/{model}', [ApiController::class, 'delete'])
+        ->where('model', $modelRoutes);
 
     Route::middleware(['add.model.object'])->group(function () use ($modelRoutes) {
         Route::get('/{model}/{id}', [ApiController::class, 'show'])
             ->where('model', $modelRoutes)
             ->middleware('select.columns');
         Route::put('/{model}/{id}', [ApiController::class, 'update'])
-            ->where('model', $modelRoutes);
-        Route::delete('/{model}/{id}', [ApiController::class, 'delete'])
             ->where('model', $modelRoutes);
     });
 });
