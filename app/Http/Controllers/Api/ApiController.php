@@ -76,7 +76,8 @@ class ApiController extends Controller
             if (!$filter) return response()->json(['message' => config('constants.messages.http_403')], 403);
             $filtersId = false;
             foreach ($pairs as $pair) {
-                if ($pair === "{user_id=$user->id}") {
+                $pairData = explode('=', $pair);
+                if ($pairData[0] === 'user_id' && $pairData[1] == $user->id) {
                     $filtersId = true;
                     break;
                 }
@@ -144,14 +145,12 @@ class ApiController extends Controller
         $data = [];
 
         if ($model instanceof Task) {
-            $validatorService->validateTaskPost($request);
-            $data = [
-                'title' => $request->title,
-                'description' => $request->description,
-                'due_date' => $request->due_date,
-                'user_id' => $user->id
-            ];
-            $model::create($data);
+            $validData = $validatorService->validateTaskPost($request);
+            $user->tasks()->create([
+                'title' => $validData['title'],
+                'description' => $validData['description'],
+                'due_date' => $validData['due_date'],
+            ]);
             return response()->json([
                 'message' => config('constants.messages.http_200')
             ]);
