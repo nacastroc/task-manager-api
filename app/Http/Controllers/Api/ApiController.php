@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Task;
 use App\Services\QueryService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -79,7 +80,9 @@ class ApiController extends Controller
         // Generic string search by selected columns.
         if ($searchString) {
             $validSearchColumns = $queryService->getValidColumns($table, ['string', 'text']);
-            $searchColumns = $columns != ['*'] ? array_intersect($columns, $validSearchColumns) : $validSearchColumns;
+            $searchColumns = $columns != ['*']
+                ? array_intersect($columns, $validSearchColumns)
+                : $validSearchColumns;
             foreach ($searchColumns as $column) {
                 $query->orWhere($column, 'LIKE', '%' . $searchString . '%');
             }
@@ -101,6 +104,7 @@ class ApiController extends Controller
      */
     public function show(Request $request)
     {
+        $user = $request->user();
         $route = $request->route('model');
         $model = $request->input('data-model');
         $id = $request->route('id');
@@ -113,7 +117,13 @@ class ApiController extends Controller
 
         $item = $model::with($with)->find($id, $columns);
 
-        if (!$item) return response()->json(['message' => "Object of {$route} with id {$id} not found"], 404);
+        // Security first.
+        if ($model instanceof Task && !$user->admin && $item && $item->user_id !== $user->id)
+            response()->json(['message' => config('constants.messages.http_403')], 403);
+
+        // Data presence later.
+        if (!$item)
+            return response()->json(['message' => "Object of {$route} with id {$id} not found"], 404);
 
         return response()->json($item);
     }

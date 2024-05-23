@@ -44,8 +44,11 @@ class RouteSecurity
             case 'DELETE':
                 return $this->_delete($user, $model, $request, $next);
             case 'GET':
-                // TODO
-                return $next($request);
+                $id = $request->route('id');
+                if ($id)
+                    return $this->show($id, $user, $model, $request, $next);
+                else
+                    return $this->list($user, $model, $request, $next);
             default:
                 return response()->json(['message' => config('constants.messages.http_405')], 405);
         }
@@ -75,6 +78,24 @@ class RouteSecurity
                     return response()->json(['message' => config('constants.messages.http_403')], 403);
                 }
             }
+        }
+
+        return $next($request);
+    }
+
+    private function list($user, $model, $request, $next) {
+        if ($model instanceof User) {
+            if (!$user->admin)
+                // Only admins allowed
+                return response()->json(['message' => config('constants.messages.http_403')], 403);
+        }
+
+        return $next($request);
+    }
+
+    private function show($id, $user, $model, $request, $next) {
+        if ($model instanceof User && !$user->admin && $user->id !== $id) {
+            return response()->json(['message' => config('constants.messages.http_403')], 403);
         }
 
         return $next($request);

@@ -83,20 +83,20 @@ class ApiControllerTest extends TestCase
                 'expectedStatus' => 200,
                 'messageKey' => null
             ],
-            'paginated users' => [
+            'admin can get paginated users' => [
                 'model' => 'user',
                 'query' => '',
-                'admin' => false,
+                'admin' => true,
                 'expectedJsonStructure' => [
                     'data' => [self::USER_JSON_STRUCTURE]
                 ] + self::PAGINATED_JSON_STRUCTURE,
                 'expectedStatus' => 200,
                 'messageKey' => null
             ],
-            'paginated users columns name with tasks' => [
+            'admin can get paginated users columns name with tasks' => [
                 'model' => 'user',
                 'query' => '?columns=name&with=tasks',
-                'admin' => false,
+                'admin' => true,
                 'expectedJsonStructure' => [
                     'data' => [[
                         'id',
@@ -106,6 +106,22 @@ class ApiControllerTest extends TestCase
                 ] + self::PAGINATED_JSON_STRUCTURE,
                 'expectedStatus' => 200,
                 'messageKey' => null
+            ],
+            'non-admin cannot get paginated users' => [
+                'model' => 'user',
+                'query' => '',
+                'admin' => false,
+                'expectedJsonStructure' => null,
+                'expectedStatus' => 403,
+                'messageKey' => 'constants.messages.http_403'
+            ],
+            'non-admin cannot get paginated users columns name with tasks' => [
+                'model' => 'user',
+                'query' => '?columns=name&with=tasks',
+                'admin' => false,
+                'expectedJsonStructure' => null,
+                'expectedStatus' => 403,
+                'messageKey' => 'constants.messages.http_403'
             ],
             'non paginated' => [
                 'model' => 'tasks',
