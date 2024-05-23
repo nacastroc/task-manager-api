@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Task;
+use App\Models\User;
 use App\Services\QueryService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -33,6 +33,7 @@ class ApiController extends Controller
      */
     public function list(Request $request, QueryService $queryService)
     {
+        $user = $request->user();
         $model = $request->input('data-model');
         $table = $model->getTable();
         $request->validate([
@@ -73,6 +74,19 @@ class ApiController extends Controller
                 // Add filter key-value pair to the query's where clause.
                 $query->where($key, $value);
             }
+        }
+
+        // Security check
+        if (!$model instanceof User && !$user->admin) {
+            if (!$filter) return response()->json(['message' => config('constants.messages.http_403')], 403);
+            $filtersId = false;
+            foreach ($pairs as $pair) {
+                if ($pair === "{user_id=$user->id}") {
+                    $filtersId = true;
+                    break;
+                }
+            }
+            if (!$filtersId) return response()->json(['message' => config('constants.messages.http_403')], 403);
         }
 
         // Generic string search.
@@ -118,7 +132,7 @@ class ApiController extends Controller
         $item = $model::with($with)->find($id, $columns);
 
         // Security first.
-        if ($model instanceof Task && !$user->admin && $item && $item->user_id !== $user->id)
+        if (!$model instanceof User && !$user->admin && $item && $item->user_id !== $user->id)
             response()->json(['message' => config('constants.messages.http_403')], 403);
 
         // Data presence later.

@@ -64,17 +64,35 @@ class ApiControllerTest extends TestCase
             'paginated tasks' => [
                 'model' => 'tasks',
                 'query' => '',
-                'admin' => false,
+                'admin' => true,
                 'expectedJsonStructure' => [
                     'data' => [self::TASK_JSON_STRUCTURE]
                 ] + self::PAGINATED_JSON_STRUCTURE,
                 'expectedStatus' => 200,
                 'messageKey' => null
             ],
+            'paginated tasks and filter' => [
+                'model' => 'tasks',
+                'query' => '?filter=[user_id=1]',
+                'admin' => true,
+                'expectedJsonStructure' => [
+                    'data' => [self::TASK_JSON_STRUCTURE]
+                ] + self::PAGINATED_JSON_STRUCTURE,
+                'expectedStatus' => 200,
+                'messageKey' => null
+            ],
+            'non-admin cannot get paginated tasks without filter' => [
+                'model' => 'tasks',
+                'query' => '',
+                'admin' => false,
+                'expectedJsonStructure' => null,
+                'expectedStatus' => 403,
+                'messageKey' => 'constants.messages.http_403'
+            ],
             'paginated tasks with user' => [
                 'model' => 'tasks',
                 'query' => '?with=user',
-                'admin' => false,
+                'admin' => true,
                 'expectedJsonStructure' => [
                     'data' => [
                         self::TASK_JSON_STRUCTURE + [['user' => [self::USER_JSON_STRUCTURE]]]
@@ -126,10 +144,18 @@ class ApiControllerTest extends TestCase
             'non paginated' => [
                 'model' => 'tasks',
                 'query' => '?per_page=0',
-                'admin' => false,
+                'admin' => true,
                 'expectedJsonStructure' => [self::TASK_JSON_STRUCTURE],
                 'expectedStatus' => 200,
                 'messageKey' => null
+            ],
+            'non admin cannot get non paginated without filter' => [
+                'model' => 'tasks',
+                'query' => '?per_page=0',
+                'admin' => false,
+                'expectedJsonStructure' => null,
+                'expectedStatus' => 403,
+                'messageKey' => 'constants.messages.http_403'
             ],
             'unauthenticated' => [
                 'model' => 'tasks',
