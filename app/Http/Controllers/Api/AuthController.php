@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Jobs\SendEmailVerificationNotification;
 use App\Models\User;
+use App\Services\ValidatorService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\JsonResponse;
@@ -22,21 +23,9 @@ class AuthController extends Controller
      * @param  Request  $request
      * @return JsonResponse
      */
-    public function register(Request $request)
+    public function register(Request $request, ValidatorService $validatorService)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => [
-                'required',
-                'string',
-                'min:8',              // must be at least 8 characters in length
-                'regex:/[a-z]/',      // must contain at least one lowercase letter
-                'regex:/[A-Z]/',      // must contain at least one uppercase letter
-                'regex:/[0-9]/',      // must contain at least one digit
-                'regex:/[@$!%*#?&]/', // must contain a special character
-            ]
-        ]);
+        $validatorService->validateUserRegister($request);
 
         $user = User::create([
             'name' => $request->name,
@@ -61,15 +50,9 @@ class AuthController extends Controller
      * @param  Request  $request
      * @return JsonResponse
      */
-    public function login(Request $request)
+    public function login(Request $request, ValidatorService $validatorService)
     {
-        $request->validate([
-            'email' => 'required|string|email|max:255',
-            'password' => [
-                'required',
-                'string',
-            ]
-        ]);
+        $validatorService->validateUserLogin($request);
 
         $credentials = $request->only('email', 'password');
 

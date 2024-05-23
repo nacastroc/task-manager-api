@@ -36,22 +36,35 @@ class RouteSecurity
 
         switch ($method) {
             case 'POST':
-                // TODO
-                return $next($request);
+                return $this->_post($user, $model, $request, $next);
             case 'PUT':
-                // TODO
-                return $next($request);
+                return $this->_put($user, $model, $request, $next);
             case 'DELETE':
                 return $this->_delete($user, $model, $request, $next);
             case 'GET':
                 $id = $request->route('id');
                 if ($id)
-                    return $this->show($id, $user, $model, $request, $next);
+                    return $this->_show($id, $user, $model, $request, $next);
                 else
-                    return $this->list($user, $model, $request, $next);
+                    return $this->_list($user, $model, $request, $next);
             default:
                 return response()->json(['message' => config('constants.messages.http_405')], 405);
         }
+    }
+
+    private function _post($user, $model, $request, $next) {
+        if ($model === 'user')
+            return response()->json(['message' => config('constants.messages.http_403')], 403);
+        return $next($request);
+    }
+
+    private function _put($user, $model, $request, $next) {
+        $id = $request->id;
+
+        if (!$user->admin && $model === 'user' && $user->id !== $id)
+            return response()->json(['message' => config('constants.messages.http_403')], 403);
+
+        return $next($request);
     }
 
     private function _delete($user, $model, $request, $next)
@@ -83,7 +96,7 @@ class RouteSecurity
         return $next($request);
     }
 
-    private function list($user, $model, $request, $next) {
+    private function _list($user, $model, $request, $next) {
         if ($model instanceof User) {
             if (!$user->admin)
                 // Only admins allowed
@@ -93,7 +106,7 @@ class RouteSecurity
         return $next($request);
     }
 
-    private function show($id, $user, $model, $request, $next) {
+    private function _show($id, $user, $model, $request, $next) {
         if ($model instanceof User && !$user->admin && $user->id !== $id) {
             return response()->json(['message' => config('constants.messages.http_403')], 403);
         }

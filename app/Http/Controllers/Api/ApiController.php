@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\Task;
 use App\Services\QueryService;
+use App\Services\ValidatorService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
@@ -15,12 +17,6 @@ use Illuminate\Http\JsonResponse;
  */
 class ApiController extends Controller
 {
-    // Helper functions.
-
-    public function save()
-    {
-        // TODO
-    }
 
     // Controller endpoint functions.
 
@@ -31,14 +27,13 @@ class ApiController extends Controller
      * @param QueryService $queryService
      * @return JsonResponse
      */
-    public function list(Request $request, QueryService $queryService)
+    public function list(Request $request, QueryService $queryService, ValidatorService $validatorService)
     {
         $user = $request->user();
         $model = $request->input('data-model');
         $table = $model->getTable();
-        $request->validate([
-            'filter' => 'string|regex:/^\[(([a-z_][a-z0-9_]*)=([^,]*),?)+\]$/',
-        ]);
+
+        $validatorService->validateListFilter($request);
 
         // Get query params.
         // Pagination.
@@ -142,18 +137,39 @@ class ApiController extends Controller
         return response()->json($item);
     }
 
-    public function create(Request $request)
+    public function create(Request $request, ValidatorService $validatorService)
     {
-        // TODO
+        $user = $request->user();
+        $model = $request->input('data-model');
+        $data = [];
 
-        return response()->json([
-            'message' => config('constants.messages.http_200')
-        ]);
+        if ($model instanceof Task) {
+            $validatorService->validateTaskPost($request);
+            $data = [
+                'title' => $request->title,
+                'description' => $request->description,
+                'due_date' => $request->due_date,
+                'user_id' => $user->id
+            ];
+            $model::create($data);
+            return response()->json([
+                'message' => config('constants.messages.http_200')
+            ]);
+        } else {
+            response()->json(['message' => config('constants.messages.http_403')], 403);
+        }
     }
 
-    public function update(Request $request)
+    public function update(Request $request, ValidatorService $validatorService)
     {
-        // TODO
+        $model = $request->input('data-model');
+
+        if ($model instanceof Task) {
+            $task = $validatorService->validateTaskPut($request);
+            $task->save();
+        } else {
+            response()->json(['message' => config('constants.messages.http_403')], 403);
+        }
 
         return response()->json([
             'message' => config('constants.messages.http_200')
